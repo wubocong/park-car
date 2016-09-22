@@ -17,6 +17,10 @@ cc.Class({
         succeedLayer: {
             default: null,
             type: cc.Node
+        },
+        control: {
+            default: null,
+            type: cc.Node
         }
     },
 
@@ -29,8 +33,8 @@ cc.Class({
         this.wheel = this.node.getChildByName('frontWheel');
         this.staticData = {
             speedMax: 30,
-            acceleration: 1.8,
-            friction: 0.8,
+            acceleration: 1.5,
+            friction: 1.2,
             initCarAngleDegree: 90 - this.node.rotation,
             initWheelAngleDegree: this.wheel.rotation,
             wheelPos: this.wheel.y,
@@ -55,8 +59,10 @@ cc.Class({
             carAngle: this.staticData.initCarAngleDegree / 180 * Math.PI,
             wheelAngleDegree: this.staticData.initWheelAngleDegree,
             wheelAngle: this.staticData.initWheelAngleDegree / 180 * Math.PI,
-            startTime: new Date()
+            startTime: new Date(),
+            directionFunc: null
         };
+        this.bindDirectionBtn();
 
         cc.director.getCollisionManager().enabled = true;
         // cc.director.getCollisionManager().enabledDebugDraw = true;
@@ -70,19 +76,19 @@ cc.Class({
                 switch (keyCode) {
                     case cc.KEY.a:
                     case cc.KEY.left:
-                        self.turnLeft();
+                        self.data.directionFunc = self.turnLeft.bind(self);
                         break;
                     case cc.KEY.d:
                     case cc.KEY.right:
-                        self.turnRight();
+                        self.data.directionFunc = self.turnRight.bind(self);
                         break;
                     case cc.KEY.w:
                     case cc.KEY.up:
-                        self.turnUp();
+                        self.data.directionFunc = self.turnUp.bind(self);
                         break;
                     case cc.KEY.s:
                     case cc.KEY.down:
-                        self.turnDown();
+                        self.data.directionFunc = self.turnDown.bind(self);
                         break;
                 }
             },
@@ -104,6 +110,9 @@ cc.Class({
         // time per frame
         // console.log(dt);
         if (this.data.isPlaying) {
+            if (this.data.directionFunc) {
+                this.data.directionFunc();
+            }
             var curTime = new Date();
             var useTime = curTime - this.data.startTime;
             if (useTime > 60000) {
@@ -135,6 +144,39 @@ cc.Class({
         }
     },
 
+    bindDirectionBtn: function () {
+        var self = this;
+        this.control.children.forEach(function (btn) {
+            btn.on(cc.Node.EventType.TOUCH_START, start, self);
+            btn.on(cc.Node.EventType.MOUSE_DOWN, start, self);
+            btn.on(cc.Node.EventType.MOUSE_UP, end, self);
+            btn.on(cc.Node.EventType.TOUCH_CANCEL, end, self);
+            btn.on(cc.Node.EventType.TOUCH_END, end, self);
+        });
+        function start(e) {
+            if (!this.data.directionFunc) {
+                var target = e.target.name;
+                switch (target) {
+                    case 'Up':
+                        this.data.directionFunc = this.turnUp.bind(this);
+                        break;
+                    case 'Down':
+                        this.data.directionFunc = this.turnDown.bind(this);
+                        break;
+                    case 'Left':
+                        this.data.directionFunc = this.turnLeft.bind(this);
+                        break;
+                    case 'Right':
+                        this.data.directionFunc = this.turnRight.bind(this);
+                        break;
+                }
+            }
+        }
+        function end() {
+            this.data.directionFunc = null;
+        }
+    },
+
     secondOrderDeter: function (a, b, c, d) {
         return a * d - b * c;
     },
@@ -155,7 +197,7 @@ cc.Class({
 
     turnLeft: function () {
         if (this.data.wheelAngleDegree > -30) {
-            this.data.wheelAngleDegree -= 1;
+            this.data.wheelAngleDegree -= 0.2;
         } else {
             this.data.wheelAngleDegree = -30;
         }
@@ -164,7 +206,7 @@ cc.Class({
 
     turnRight: function () {
         if (this.data.wheelAngleDegree < 30) {
-            this.data.wheelAngleDegree += 1;
+            this.data.wheelAngleDegree += 0.2;
         } else {
             this.data.wheelAngleDegree = 30;
 
@@ -204,6 +246,7 @@ cc.Class({
 
     slide: function () {
         this.data.speedStatus = 0;
+        this.data.directionFunc = null;
     },
 
     stop: function () {
@@ -236,9 +279,12 @@ cc.Class({
             var succeedTime = this.succeedLayer.getChildByName('succeedTime').getComponent(cc.Label);
             succeedTime.string = timeString;
             if (cc.game.curOrdeal === 1) {
-                var next = this.succeedLayer.getChildByName('Next').getComponent(cc.Button);
-                cc.game.firstTime = useTime;
-                next.interactable = true;
+                var next = this.succeedLayer.getChildByName('Next');
+                if (next) {
+                    next = next.getComponent(cc.Button);
+                    cc.game.firstTime = useTime;
+                    next.interactable = true;
+                }
             } else {
                 succeedTime.string += '\n' + (useTime + cc.game.firstTime) + 'ms';
             }
@@ -309,7 +355,7 @@ cc.Class({
                 }
 
                 // angle reduce a half
-                this.data.carAngle += (Math.atan(dt * this.data.speed / radius) * turning) / 2;
+                this.data.carAngle += (Math.atan(dt * this.data.speed / radius) * turning) / 4;
                 this.data.carAngleDegree = (this.data.carAngle * 180 / Math.PI) % 360;
                 // console.log('car angle: ' + this.data.carAngleDegree + '°');
             }
