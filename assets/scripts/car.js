@@ -176,93 +176,7 @@ cc.Class({
             this.data.directionFunc = null;
         }
     },
-
-    secondOrderDeter: function (a, b, c, d) {
-        return a * d - b * c;
-    },
-
-    calcT: function (line1, line2) {
-        var x1 = line1.first.first;
-        var y1 = line1.first.second;
-        var dx1 = line1.second.first;
-        var dy1 = line1.second.second;
-        var x2 = line2.first.first;
-        var y2 = line2.first.second;
-        var dx2 = line2.second.first;
-        var dy2 = line2.second.second;
-        var t1 = (this.secondOrderDeter(x2, y2, dx2, dy2) - this.secondOrderDeter(x1, y1, dx2, dy2)) / this.secondOrderDeter(dx1, dy1, dx2, dy2);
-        var t2 = (this.secondOrderDeter(x1, y1, dx1, dy1) - this.secondOrderDeter(x2, y2, dx1, dy1)) / this.secondOrderDeter(dx2, dy2, dx1, dy1);
-        return [t1, t2];
-    },
-
-    turnLeft: function () {
-        if (this.data.wheelAngleDegree > -30) {
-            this.data.wheelAngleDegree -= 0.2;
-        } else {
-            this.data.wheelAngleDegree = -30;
-        }
-        this.data.wheelAngle = Math.PI * this.data.wheelAngleDegree / 180;
-    },
-
-    turnRight: function () {
-        if (this.data.wheelAngleDegree < 30) {
-            this.data.wheelAngleDegree += 0.2;
-        } else {
-            this.data.wheelAngleDegree = 30;
-
-        }
-        this.data.wheelAngle = Math.PI * this.data.wheelAngleDegree / 180;
-    },
-
-    turnUp: function () {
-        if (this.data.collidedDirection === 'front') {
-            this.data.speedStatus = 0;
-        } else {
-            if (this.data.collided && !this.data.collidedDirection) {
-                this.data.collidedDirection = 'front';
-                this.data.speedStatus = 0;
-            } else {
-                this.data.speedStatus = 1;
-                this.data.collided = false;
-                this.data.collidedDirection = null;
-            }
-        }
-    },
-
-    turnDown: function () {
-        if (this.data.collidedDirection === 'back') {
-            this.data.speedStatus = 0;
-        } else {
-            if (this.data.collided && !this.data.collidedDirection) {
-                this.data.collidedDirection = 'back';
-                this.data.speedStatus = 0;
-            } else {
-                this.data.speedStatus = -1;
-                this.data.collided = false;
-                this.data.collidedDirection = null;
-            }
-        }
-    },
-
-    slide: function () {
-        this.data.speedStatus = 0;
-        this.data.directionFunc = null;
-    },
-
-    stop: function () {
-        this.data.speed = this.data.speedX = this.data.speedY = 0;
-    },
-
-    isPointInRectangle: function (x, y) {
-        var bl = this.staticData.targetPoint[0];
-        var tr = this.staticData.targetPoint[1];
-        if (x >= bl[0] && x <= tr[0] && y >= bl[1] && y <= tr[1]) {
-            return true;
-        } else {
-            return false;
-        }
-    },
-
+    
     judgeSuccess: function (useTime, timeString) {
         var isInTargetPos = true;
         var deltaAngle = this.data.carAngle - Math.PI / 2;
@@ -365,6 +279,92 @@ cc.Class({
         this.data.speedY = this.data.speed * Math.sin(this.data.carAngle);
     },
 
+    secondOrderDeter: function (a, b, c, d) {
+        return a * d - b * c;
+    },
+
+    calcT: function (line1, line2) {
+        var x1 = line1.first.first;
+        var y1 = line1.first.second;
+        var dx1 = line1.second.first;
+        var dy1 = line1.second.second;
+        var x2 = line2.first.first;
+        var y2 = line2.first.second;
+        var dx2 = line2.second.first;
+        var dy2 = line2.second.second;
+        var t1 = (this.secondOrderDeter(x2, y2, dx2, dy2) - this.secondOrderDeter(x1, y1, dx2, dy2)) / this.secondOrderDeter(dx1, dy1, dx2, dy2);
+        var t2 = (this.secondOrderDeter(x1, y1, dx1, dy1) - this.secondOrderDeter(x2, y2, dx1, dy1)) / this.secondOrderDeter(dx2, dy2, dx1, dy1);
+        return [t1, t2];
+    },
+
+    turnLeft: function () {
+        if (this.data.wheelAngleDegree > -30) {
+            this.data.wheelAngleDegree -= 0.2;
+        } else {
+            this.data.wheelAngleDegree = -30;
+        }
+        this.data.wheelAngle = Math.PI * this.data.wheelAngleDegree / 180;
+    },
+
+    turnRight: function () {
+        if (this.data.wheelAngleDegree < 30) {
+            this.data.wheelAngleDegree += 0.2;
+        } else {
+            this.data.wheelAngleDegree = 30;
+
+        }
+        this.data.wheelAngle = Math.PI * this.data.wheelAngleDegree / 180;
+    },
+
+    turnUp: function () {
+        if (this.data.collidedDirection === 'front') {
+            this.data.speedStatus = 0;
+        } else {
+            if (this.data.collided && !this.data.collidedDirection) {
+                this.data.collidedDirection = 'front';
+                this.data.speedStatus = 0;
+            } else {
+                this.data.speedStatus = 1;
+                this.data.collided = false;
+                this.data.collidedDirection = null;
+            }
+        }
+    },
+
+    turnDown: function () {
+        if (this.data.collidedDirection === 'back') {
+            this.data.speedStatus = 0;
+        } else {
+            if (this.data.collided && !this.data.collidedDirection) {
+                this.data.collidedDirection = 'back';
+                this.data.speedStatus = 0;
+            } else {
+                this.data.speedStatus = -1;
+                this.data.collided = false;
+                this.data.collidedDirection = null;
+            }
+        }
+    },
+
+    slide: function () {
+        this.data.speedStatus = 0;
+        this.data.directionFunc = null;
+    },
+
+    stop: function () {
+        this.data.speed = this.data.speedX = this.data.speedY = 0;
+    },
+
+    isPointInRectangle: function (x, y) {
+        var bl = this.staticData.targetPoint[0];
+        var tr = this.staticData.targetPoint[1];
+        if (x >= bl[0] && x <= tr[0] && y >= bl[1] && y <= tr[1]) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+
     retry: function () {
         this.data = {
             speed: 0,
@@ -378,7 +378,8 @@ cc.Class({
             collided: false,
             collidedDirection: null,
             isPlaying: true,
-            startTime: new Date()
+            startTime: new Date(),
+            directionFunc: null
         };
         this.failLayer.opacity = 0;
         this.node.x = this.staticData.initX;
