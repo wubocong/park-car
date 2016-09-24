@@ -32,8 +32,8 @@ cc.Class({
         }
         this.wheel = this.node.getChildByName('frontWheel');
         this.staticData = {
-            speedMax: 30,
-            acceleration: 1.5,
+            speedMax: 45,
+            acceleration: 1.8,
             friction: 1.2,
             initCarAngleDegree: 90 - this.node.rotation,
             initWheelAngleDegree: this.wheel.rotation,
