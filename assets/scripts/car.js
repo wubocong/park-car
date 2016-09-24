@@ -60,7 +60,7 @@ cc.Class({
             wheelAngleDegree: this.staticData.initWheelAngleDegree,
             wheelAngle: this.staticData.initWheelAngleDegree / 180 * Math.PI,
             startTime: new Date(),
-            directionFunc: null
+            directionFunc: {}
         };
         this.bindDirectionBtn();
 
@@ -76,19 +76,19 @@ cc.Class({
                 switch (keyCode) {
                     case cc.KEY.a:
                     case cc.KEY.left:
-                        self.data.directionFunc = self.turnLeft.bind(self);
+                        self.data.directionFunc.left = true;
                         break;
                     case cc.KEY.d:
                     case cc.KEY.right:
-                        self.data.directionFunc = self.turnRight.bind(self);
+                        self.data.directionFunc.right = true;
                         break;
                     case cc.KEY.w:
                     case cc.KEY.up:
-                        self.data.directionFunc = self.turnUp.bind(self);
+                        self.data.directionFunc.up = true;
                         break;
                     case cc.KEY.s:
                     case cc.KEY.down:
-                        self.data.directionFunc = self.turnDown.bind(self);
+                        self.data.directionFunc.down = true;
                         break;
                 }
             },
@@ -110,15 +110,21 @@ cc.Class({
         // time per frame
         // console.log(dt);
         if (this.data.isPlaying) {
-            if (this.data.directionFunc) {
-                this.data.directionFunc();
+            if (this.data.directionFunc.left) {
+                this.turnLeft();
+            }
+            if (this.data.directionFunc.right) {
+                this.turnRight();
+            }
+            if (this.data.directionFunc.up) {
+                this.turnUp();
+            }
+            if (this.data.directionFunc.down) {
+                this.turnDown();
             }
             var curTime = new Date();
             var useTime = curTime - this.data.startTime;
-            if (useTime > 60000) {
-                this.fail();
-                return;
-            }
+
             var s = parseInt(useTime / 1000);
             var ms = useTime % 1000;
             if (s < 10) {
@@ -130,6 +136,11 @@ cc.Class({
                 ms = '0' + ms;
             }
             this.timer.string = s + ':' + ms;
+
+            if (useTime > 60000) {
+                this.fail();
+                return;
+            }
 
             this.wheel.rotation = this.data.wheelAngleDegree;
             this.node.rotation = 90 - this.data.carAngleDegree;
@@ -144,39 +155,60 @@ cc.Class({
         }
     },
 
+    onCollisionEnter: function (other, self) {
+        console.warn('crash!');
+        this.data.collided = true;
+        this.fail()
+    },
+
+    onCollisionExit: function () {
+        // console.log('exit crash');
+        this.data.collided = false; // useless
+    },
+
     bindDirectionBtn: function () {
         var self = this;
-        this.control.children.forEach(function (btn) {
-            btn.on(cc.Node.EventType.TOUCH_START, start, self);
-            btn.on(cc.Node.EventType.MOUSE_DOWN, start, self);
-            btn.on(cc.Node.EventType.MOUSE_UP, end, self);
-            btn.on(cc.Node.EventType.TOUCH_CANCEL, end, self);
-            btn.on(cc.Node.EventType.TOUCH_END, end, self);
-        });
-        function start(e) {
-            if (!this.data.directionFunc) {
-                var target = e.target.name;
-                switch (target) {
-                    case 'Up':
-                        this.data.directionFunc = this.turnUp.bind(this);
-                        break;
-                    case 'Down':
-                        this.data.directionFunc = this.turnDown.bind(this);
-                        break;
-                    case 'Left':
-                        this.data.directionFunc = this.turnLeft.bind(this);
-                        break;
-                    case 'Right':
-                        this.data.directionFunc = this.turnRight.bind(this);
-                        break;
-                }
+        this.node.parent.on(cc.Node.EventType.TOUCH_START, function (e) {
+            self.clearShare();
+            var up = self.control.getChildByName('Up').getNodeToWorldTransformAR(),
+                down = self.control.getChildByName('Down').getNodeToWorldTransformAR(),
+                left = self.control.getChildByName('Left').getNodeToWorldTransformAR(),
+                right = self.control.getChildByName('Right').getNodeToWorldTransformAR();
+            var pos = e.getTouches()[0].getLocation();
+            var target;
+            if (self.isPointInCircle(pos, up, 30)) {
+                target = 'Up';
             }
-        }
-        function end() {
-            this.data.directionFunc = null;
-        }
+            if (self.isPointInCircle(pos, down, 30)) {
+                target = 'Down';
+            }
+            if (self.isPointInCircle(pos, left, 30)) {
+                target = 'Left';
+            }
+            if (self.isPointInCircle(pos, right, 30)) {
+                target = 'Right';
+            }
+            switch (target) {
+                case 'Up':
+                    self.data.directionFunc.up = true;
+                    break;
+                case 'Down':
+                    self.data.directionFunc.down = true;
+                    break;
+                case 'Left':
+                    self.data.directionFunc.left = true;
+                    break;
+                case 'Right':
+                    self.data.directionFunc.right = true;
+                    break;
+            }
+        }, this.node);
+        this.node.parent.on(cc.Node.EventType.TOUCH_END, this.slide.bind(this), this.node);
+        this.node.parent.on(cc.Node.EventType.TOUCH_CANCEL, this.slide.bind(this), this.node);
+        // this.node.parent.on(cc.Node.EventType.MOUSE_DOWN, start, this.node);
+        // this.node.parent.on(cc.Node.EventType.MOUSE_UP, this.slide.bind(this), this.node);
     },
-    
+
     judgeSuccess: function (useTime, timeString) {
         var isInTargetPos = true;
         var deltaAngle = this.data.carAngle - Math.PI / 2;
@@ -190,17 +222,16 @@ cc.Class({
             }
         }
         if (isInTargetPos) {
-            var succeedTime = this.succeedLayer.getChildByName('succeedTime').getComponent(cc.Label);
-            succeedTime.string = timeString;
+            var succeedDialog = this.succeedLayer.getChildByName('succeedDialog');
             if (cc.game.curOrdeal === 1) {
-                var next = this.succeedLayer.getChildByName('Next');
-                if (next) {
-                    next = next.getComponent(cc.Button);
-                    cc.game.firstTime = useTime;
-                    next.interactable = true;
-                }
+                succeedDialog.getChildByName('succeedTime').getComponent(cc.Label).string = timeString;
+                cc.game.firstTime = useTime;
+                succeedDialog.getChildByName('succeedNext').getComponent(cc.Button).interactable = true;
             } else {
-                succeedTime.string += '\n' + (useTime + cc.game.firstTime) + 'ms';
+                succeedDialog.getChildByName('succeedWord').getComponent(cc.Label).string = '恭喜你连开两次车！总成绩：' + (useTime + cc.game.firstTime) + 'ms';
+                succeedDialog.getChildByName('succeedRank').getComponent(cc.Label).string = '排名： 前30%';
+                succeedDialog.getChildByName('succeedNotify').getComponent(cc.Button).interactable = true;
+                succeedDialog.getChildByName('succeedRetry').getComponent(cc.Button).interactable = true;
             }
             this.succeedLayer.opacity = 255;
             this.data.isPlaying = false;
@@ -297,9 +328,27 @@ cc.Class({
         return [t1, t2];
     },
 
+    isPointInRectangle: function (x, y) {
+        var bl = this.staticData.targetPoint[0];
+        var tr = this.staticData.targetPoint[1];
+        if (x >= bl[0] && x <= tr[0] && y >= bl[1] && y <= tr[1]) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+
+    isPointInCircle: function (point, center, radius) {
+        if (Math.pow(point.x - center.tx, 2) + Math.pow(point.y - center.ty, 2) < radius * radius) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+
     turnLeft: function () {
         if (this.data.wheelAngleDegree > -30) {
-            this.data.wheelAngleDegree -= 0.2;
+            this.data.wheelAngleDegree -= 0.4;
         } else {
             this.data.wheelAngleDegree = -30;
         }
@@ -308,7 +357,7 @@ cc.Class({
 
     turnRight: function () {
         if (this.data.wheelAngleDegree < 30) {
-            this.data.wheelAngleDegree += 0.2;
+            this.data.wheelAngleDegree += 0.4;
         } else {
             this.data.wheelAngleDegree = 30;
 
@@ -348,21 +397,12 @@ cc.Class({
 
     slide: function () {
         this.data.speedStatus = 0;
-        this.data.directionFunc = null;
+        this.data.directionFunc = {};
+        console.log('slide');
     },
 
     stop: function () {
         this.data.speed = this.data.speedX = this.data.speedY = 0;
-    },
-
-    isPointInRectangle: function (x, y) {
-        var bl = this.staticData.targetPoint[0];
-        var tr = this.staticData.targetPoint[1];
-        if (x >= bl[0] && x <= tr[0] && y >= bl[1] && y <= tr[1]) {
-            return true;
-        } else {
-            return false;
-        }
     },
 
     retry: function () {
@@ -379,16 +419,19 @@ cc.Class({
             collidedDirection: null,
             isPlaying: true,
             startTime: new Date(),
-            directionFunc: null
+            directionFunc: {}
         };
+        this.succeedLayer.opacity = 0;
         this.failLayer.opacity = 0;
         this.node.x = this.staticData.initX;
         this.node.y = this.staticData.initY;
-        var retry = this.failLayer.getChildByName('Retry').getComponent(cc.Button);
-        retry.interactable = false;
+        this.failLayer.getChildByName('failDialog').getChildByName('failRetry').getComponent(cc.Button).interactable = false;
+        var succeedDialog = this.succeedLayer.getChildByName('succeedDialog');
         if (cc.game.curOrdeal === 1) {
-            var next = this.succeedLayer.getChildByName('Next').getComponent(cc.Button);
-            next.interactable = false;
+            succeedDialog.getChildByName('succeedNext').getComponent(cc.Button).interactable = false;
+        } else {
+            succeedDialog.getChildByName('succeedRetry').getComponent(cc.Button).interactable = false;
+            succeedDialog.getChildByName('succeedNotify').getComponent(cc.Button).interactable = false;
         }
     },
 
@@ -401,18 +444,17 @@ cc.Class({
     fail: function () {
         this.data.isPlaying = false;
         this.failLayer.opacity = 255;
-        var retry = this.failLayer.getChildByName('Retry').getComponent(cc.Button);
-        retry.interactable = true;
+        this.failLayer.getChildByName('failDialog').getChildByName('failRetry').getComponent(cc.Button).interactable = true;
     },
 
-    onCollisionEnter: function (other, self) {
-        console.warn('crash!');
-        this.data.collided = true;
-        this.fail()
+    share: function () {
+        this.succeedLayer.getChildByName('Share').opacity = 255;
     },
 
-    onCollisionExit: function () {
-        // console.log('exit crash');
-        this.data.collided = false; // useless
-    },
+    clearShare: function () {
+        var share = this.succeedLayer.getChildByName('Share');
+        if (share && share.opacity === 255) {
+            share.opacity = 0;
+        }
+    }
 });
