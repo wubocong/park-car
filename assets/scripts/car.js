@@ -135,7 +135,7 @@ cc.Class({
             } else if (ms < 100) {
                 ms = '0' + ms;
             }
-            this.timer.string = s + ':' + ms;
+            this.timer.string = s + '.' + ms + 's';
 
             if (useTime > 60000) {
                 this.fail();
@@ -227,9 +227,11 @@ cc.Class({
                 succeedDialog.getChildByName('succeedTime').getComponent(cc.Label).string = timeString;
                 cc.game.firstTime = useTime;
                 succeedDialog.getChildByName('succeedNext').getComponent(cc.Button).interactable = true;
+                succeedDialog.getChildByName('succeedRetry').getComponent(cc.Button).interactable = true;
             } else {
-                succeedDialog.getChildByName('succeedWord').getComponent(cc.Label).string = '恭喜你连开两次车！总成绩：' + (useTime + cc.game.firstTime) + 'ms';
-                succeedDialog.getChildByName('succeedRank').getComponent(cc.Label).string = '排名： 前30%';
+                var totalTime = useTime + cc.game.firstTime;
+                succeedDialog.getChildByName('succeedWord').getComponent(cc.Label).string = '恭喜你获得老司机资格证！\n总成绩：' + parseInt(totalTime / 1000) + '.' + totalTime % 1000 + 's';
+                succeedDialog.getChildByName('succeedRank').getComponent(cc.Label).string = '排名：前30%';
                 succeedDialog.getChildByName('succeedNotify').getComponent(cc.Button).interactable = true;
                 succeedDialog.getChildByName('succeedRetry').getComponent(cc.Button).interactable = true;
             }
@@ -264,19 +266,19 @@ cc.Class({
                 }
             }
             var rearLine = {
-                first: {
-                    first: this.node.x - Math.cos(this.data.carAngle) * this.staticData.wheelPos,
-                    second: this.node.y - Math.sin(this.data.carAngle) * this.staticData.wheelPos
-                },
-                second: {
-                    first: this.staticData.wheelDis * Math.cos(this.data.carAngle),
-                    second: this.staticData.wheelDis * Math.sin(this.data.carAngle)
+                    first: {
+                        first: this.node.x - Math.cos(this.data.carAngle) * this.staticData.wheelPos,
+                        second: this.node.y - Math.sin(this.data.carAngle) * this.staticData.wheelPos
+                    },
+                    second: {
+                        first: this.staticData.wheelDis * Math.cos(this.data.carAngle),
+                        second: this.staticData.wheelDis * Math.sin(this.data.carAngle)
+                    }
                 }
-            }
-            // console.log('frontLine: ');
-            // console.log(frontLine);
-            // console.log('rearLine: ');
-            // console.log(rearLine);
+                // console.log('frontLine: ');
+                // console.log(frontLine);
+                // console.log('rearLine: ');
+                // console.log(rearLine);
             var t = this.calcT(frontLine, rearLine);
             if (!isNaN(t[0]) && !isNaN(t[1]) && isFinite(t[0]) && isFinite(t[1])) {
 
