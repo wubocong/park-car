@@ -1,6 +1,6 @@
 # Cocos2dx 停车游戏
 
-使用 Cocos Creator 2.4.2 开发
+使用 Cocos Creator 1.9.3 开发
 
 [实例演示](https://park.wubocong.com/)
 
